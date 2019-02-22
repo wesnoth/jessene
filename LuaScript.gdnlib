@@ -1,0 +1,18 @@
+[general]
+
+singleton=false
+load_once=true
+symbol_prefix="godot_"
+reloadable=true
+
+[entry]
+
+OSX.64="res://bin/osx/LuaScript.dylib"
+Windows.64="res://bin/win64/LuaScript.dll"
+X11.64="res://bin/x11/libLuaScript.so"
+
+[dependencies]
+
+OSX.64=[ "res://bin/x11/liblua.a" ]
+Windows.64=[ "res://bin/win64/lua.dll" ]
+X11.64=[ "res://bin/x11/liblua.a" ]
