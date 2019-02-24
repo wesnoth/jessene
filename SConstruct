@@ -37,12 +37,12 @@ elif platform == "windows":
 
     final_lib_path = final_lib_path + 'win' + str(bits) + '/'
 #env['CC'] = env['CXX']
-env.Append(CPPPATH=['.', 'src/godot-lua-module', "godot-cpp/godot_headers/", 'godot-cpp/include/', 'godot-cpp/include/core/', 'godot-cpp/include/gen/'])
-env.Append(LIBPATH=["godot-cpp/bin","src/godot-lua-module/luasrc"])
+env.Append(CPPPATH=['.', 'src/jessene', "godot-cpp/godot_headers/", 'godot-cpp/include/', 'godot-cpp/include/core/', 'godot-cpp/include/gen/'])
+env.Append(LIBPATH=["godot-cpp/bin","src/jessene/luasrc"])
 env.Append(LIBS=["libgodot-cpp" + "." + platform + ".debug." + str(bits),"liblua"])
 
 sources = []
-add_sources(sources, "src/godot-lua-module")
+add_sources(sources, "src/jessene")
 
 library = env.SharedLibrary(target=final_lib_path + 'LuaScript', source=sources)
 Default(library)
