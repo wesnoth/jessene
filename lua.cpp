@@ -5,11 +5,14 @@ using namespace godot;
 void LuaScript::_register_methods() {
     register_method("execute", &LuaScript::execute);
     register_method("load",&LuaScript::load);
+    register_method("pushVariant",&LuaScript::pushGlobalVariant);
 }
 
 void LuaScript::_init() {
     L = luaL_newstate();
     luaL_openlibs(L);
+    //example of pushing c++ function
+    lua_register(L,"cSum",cSum);
 }
 
 LuaScript::LuaScript() {
@@ -52,14 +55,6 @@ bool LuaScript::load(String fileName) {
             L = 0;
             return false;
         }
-        /*example of pushing godot variables    
-        lua_pushinteger(L,get_parent()->get_child(0)->get("data"));
-        lua_setglobal(L, "data");
-        */
-        /*example of pushing c function
-        lua_pushcfunction(L, testing);
-        lua_setglobal(L, "Csum");
-        */
     }
     file->close();
     return true;
@@ -69,7 +64,7 @@ Variant LuaScript::execute(String name, Array array) {
     lua_getglobal(L,name.alloc_c_string());
     for (int i = 0; i < array.size(); i++) {
         Variant var = array[i];
-        pushVariant(L,var);
+        pushVariant(var);
     }
 
     lua_pcall(L,array.size(),LUA_MULTRET,0);
@@ -78,7 +73,7 @@ Variant LuaScript::execute(String name, Array array) {
     if (numReturns) {
         Array results;
         for(int i = 0; i < numReturns; i++) {
-            results.append(popVariant(L));
+            results.append(popVariant());
         }
         return results;
     } else {
@@ -86,7 +81,7 @@ Variant LuaScript::execute(String name, Array array) {
     }
 }
 
-void LuaScript::pushVariant(lua_State* L, Variant var) {
+bool LuaScript::pushVariant(Variant var) {
     switch (var.get_type())
     {
         case Variant::Type::STRING:
@@ -95,17 +90,27 @@ void LuaScript::pushVariant(lua_State* L, Variant var) {
         case Variant::Type::INT:
             lua_pushinteger(L, (int64_t)var);
             break;
+        case Variant::Type::REAL:
+            lua_pushnumber(L,var.operator double());
+            break;
         case Variant::Type::BOOL:
             lua_pushboolean(L, (bool)var);
             break;
+        case Variant::Type::POOL_BYTE_ARRAY:
+        case Variant::Type::POOL_INT_ARRAY:
+        case Variant::Type::POOL_STRING_ARRAY:
+        case Variant::Type::POOL_REAL_ARRAY:
+        case Variant::Type::POOL_VECTOR2_ARRAY:
+        case Variant::Type::POOL_VECTOR3_ARRAY:
+        case Variant::Type::POOL_COLOR_ARRAY:            
         case Variant::Type::ARRAY: {
             Array array = var.operator godot::Array();
             lua_newtable(L);
             for(int i = 0; i < array.size(); i++) {
                 Variant key = i+1;
                 Variant value = array[i];
-                pushVariant(L,key);
-                pushVariant(L,value);
+                pushVariant(key);
+                pushVariant(value);
                 lua_settable(L,-3);
             }
             break;
@@ -115,23 +120,75 @@ void LuaScript::pushVariant(lua_State* L, Variant var) {
             for(int i = 0; i < ((Dictionary)var).size(); i++) {
                 Variant key = ((Dictionary)var).keys()[i];
                 Variant value = ((Dictionary)var)[key];
-                pushVariant(L,key);
-                pushVariant(L,value);
+                pushVariant(key);
+                pushVariant(value);
                 lua_settable(L,-3);
             }
             break;
-        default:
+        case Variant::Type::VECTOR2: {
+            Vector2 vector2 = var.operator godot::Vector2();
+            lua_newtable(L);
+            lua_pushstring(L,"X");
+            lua_pushnumber(L,vector2.x);
+            lua_settable(L,-3);
+            lua_pushstring(L,"Y");
+            lua_pushnumber(L,vector2.y);
+            lua_settable(L,-3);
+            break;     
+        }     
+        case Variant::Type::VECTOR3: {
+            Vector3 vector3 = var.operator godot::Vector3();
+            lua_newtable(L);
+            lua_pushstring(L,"X");
+            lua_pushnumber(L,vector3.x);
+            lua_settable(L,-3);
+            lua_pushstring(L,"Y");
+            lua_pushnumber(L,vector3.y);
+            lua_settable(L,-3);
+            lua_pushstring(L,"Z");
+            lua_pushnumber(L,vector3.z);
+            lua_settable(L,-3);
+            break; 
+        }
+        case Variant::Type::COLOR: {
+            Color color = var.operator godot::Color();
+            lua_newtable(L);
+            lua_pushstring(L,"R");
+            lua_pushnumber(L,color.r);
+            lua_settable(L,-3);
+            lua_pushstring(L,"G");
+            lua_pushnumber(L,color.g);
+            lua_settable(L,-3);
+            lua_pushstring(L,"B");
+            lua_pushnumber(L,color.b);
+            lua_settable(L,-3);
+            lua_pushstring(L,"A");
+            lua_pushnumber(L,color.a);
+            lua_settable(L,-3);             
             break;
+        }
+        default:
+            Godot::print(var);
+            return false;
     }
+    return true;
 }
 
-Variant LuaScript::popVariant(lua_State* L) {
-    Variant result = getVariant(L);
+bool LuaScript::pushGlobalVariant(Variant var, String name) {
+    if (pushVariant(var)) {
+        lua_setglobal(L,name.alloc_c_string());
+        return true;
+    }
+    return false;
+}
+
+Variant LuaScript::popVariant() {
+    Variant result = getVariant();
     lua_pop(L,1);
     return result;
 }
 
-Variant LuaScript::getVariant(lua_State* L, int index) {
+Variant LuaScript::getVariant(int index) {
     Variant result;
     int type = lua_type(L,index);
     switch (type) {
@@ -148,24 +205,38 @@ Variant LuaScript::getVariant(lua_State* L, int index) {
         {
             Dictionary dict;
             for (lua_pushnil(L); lua_next(L, index-1); lua_pop(L, 1)) {
-                Variant key = getVariant(L, -2);
-                Variant value = getVariant(L, -1);
+                Variant key = getVariant(-2);
+                Variant value = getVariant(-1);
                 dict[key] = value;
             }
-            result = dict;
+            if (dict.size() == 2) {
+                if (dict.keys().count("X") && dict.keys().count("Y")) {
+                    result = Vector2(dict["X"],dict["Y"]);
+                }
+            } else if (dict.size() == 3) {
+                if (dict.keys().count("X") && dict.keys().count("Y") && dict.keys().count("Z")) {
+                    result = Vector3(dict["X"],dict["Y"],dict["Z"]);
+                }
+            } else if (dict.size() == 4) {
+                if (dict.keys().count("R") && dict.keys().count("G") && dict.keys().count("B") && dict.keys().count("B")) {
+                    result = Color(dict["R"],dict["G"],dict["B"],dict["A"]);
+                }
+            } else {
+                result = dict;
+            }
             break;
         }
         default:
-            Godot::print(Variant(type));
-            result = 0;
+            result = Variant();
     }
     return result;
 }
 
 //lua functions
-int LuaScript::testing(lua_State* L) {
+int LuaScript::cSum(lua_State* L) {
     int num1 = lua_tonumber(L,1);
     int num2 = lua_tonumber(L,2);
+    
     lua_pushnumber(L, num1+ num2);
     return 1;
 }
