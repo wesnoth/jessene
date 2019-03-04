@@ -52,6 +52,7 @@ When importating the module, make sure that `liblua.a` for Linux/macOS or `liblu
 ## Using in Godot
 In order to use this module in Godot, attach the gdns script to a node (we will call this LuaNode).
 
+### Executing lua functions
 Let's say you have a simple lua script under `res://lua_scripts/utils.lua`
 ```lua
 function sum(...)
@@ -77,6 +78,7 @@ Functions will then return with an array of all variants returned, since lua can
 
 So in this example `sum` will now equal [10].
 
+### Pushing global variables
 You can also push variables to godot that can be accessed globally from all future lua calls.
 
 To push a variable from godot you just need to do:
