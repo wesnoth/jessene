@@ -63,7 +63,9 @@ function sum(...)
     return result
 end
 ```
-To use the `sum(...)` function in Godot, do:
+To execute a lua function in Godot, you need to provide the name of the function as well as an Array of the arguments.
+
+For instance, to execute the `sum(...)` function in Godot, do:
 ```
 onready var Lua = $"LuaNode"
 
@@ -71,4 +73,28 @@ func foo():
     Lua.load("res://lua_scripts/utils.lua")
     var sum = Lua.execute("sum", [1, 2, 3, 4])
 ```
-`sum` will now equal 10.
+Functions will then return with an array of all variants returned, since lua can return multiple items
+
+So in this example `sum` will now equal [10].
+
+You can also push variables to godot that can be accessed globally from all future lua calls.
+
+To push a variable from godot you just need to do:
+```
+var data = 5
+
+Lua.pushVariant(data,"data")
+```
+Now in all future function calls, `data` can now be used in lua functions
+
+The Godot to lua parser at this point can recognize most built in types. The following built in types are not supported yet and will be added at a later date:
+   * Rect2
+   * Transform2D
+   * Plane
+   * Quat
+   * AABB
+   * Basis
+   * Transform
+   * NodePath
+   * RID (possibly?)
+   
