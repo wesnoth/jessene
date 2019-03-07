@@ -1,0 +1,19 @@
+FROM ubuntu:18.04
+
+WORKDIR /jessene-travis
+
+RUN apt update
+
+RUN apt install -y -qq apt-utils
+
+# package dependencies
+RUN apt install -y -qq libreadline-dev
+
+# programs
+RUN apt install -y -qq git scons cmake make gcc g++ wget
+
+# lua
+RUN wget https://www.lua.org/ftp/lua-5.3.5.tar.gz
+RUN tar -xvzf lua-5.3.5.tar.gz
+RUN mv lua-5.3.5 lua
+RUN rm lua-5.3.5.tar.gz
