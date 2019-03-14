@@ -1,4 +1,3 @@
-#include <Godot.hpp>
 #include "lua.hpp"
 
 extern "C" void GDN_EXPORT godot_gdnative_init(godot_gdnative_init_options *o) {
