@@ -1,0 +1,15 @@
+language: cpp
+sudo:     required
+
+services:
+    - docker
+
+matrix:
+  include:
+    - compiler: gcc
+
+install:
+    - . ./scripts/travis/install.sh
+
+script:
+    - ./scripts/travis/script.sh
